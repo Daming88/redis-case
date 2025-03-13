@@ -11,6 +11,7 @@ import com.hmdp.service.IUserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -24,13 +25,15 @@ public class UserController {
     @Resource
     private UserInfoRepository userInfoRepository;
 
+    @Autowired
+    IUserService iUserService;
+
     /**
      * 发送手机验证码
      */
     @PostMapping("code")
     public Result sendCode(@RequestParam("phone") String phone, HttpSession session) {
-        // TODO 发送短信验证码并保存验证码
-        return Result.fail("功能未完成");
+        return iUserService.sendCode(phone,session);
     }
 
     /**
