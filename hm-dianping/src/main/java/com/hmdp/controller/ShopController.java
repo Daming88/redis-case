@@ -4,8 +4,10 @@ package com.hmdp.controller;
 import com.hmdp.dto.Result;
 import com.hmdp.entity.Shop;
 import com.hmdp.mapper.ShopRepository;
+import com.hmdp.service.IShopService;
 import com.hmdp.utils.SystemConstants;
 import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,8 +19,11 @@ import java.util.stream.Collectors;
 @RequestMapping("/shop")
 public class ShopController {
 
-    @Resource
-    public ShopRepository shopRepository;
+    @Autowired
+    IShopService shopService;
+
+    @Autowired
+    ShopRepository shopRepository;
 
     /**
      * 根据id查询商铺信息
@@ -27,7 +32,7 @@ public class ShopController {
      */
     @GetMapping("/{id}")
     public Result queryShopById(@PathVariable("id") Long id) {
-        return Result.ok(shopRepository.findById(id));
+        return shopService.queryShopById(id);
     }
 
     /**
@@ -51,8 +56,7 @@ public class ShopController {
     @PutMapping
     public Result updateShop(@RequestBody Shop shop) {
         // 写入数据库
-        shopRepository.save(shop);
-        return Result.ok();
+        return shopService.updateShop(shop);
     }
 
     /**
@@ -62,9 +66,8 @@ public class ShopController {
      * @return 商铺列表
      */
     @GetMapping("/of/type")
-    public Result queryShopByType(
-            @RequestParam("typeId") Integer typeId,
-            @RequestParam(value = "current", defaultValue = "1") Integer current) {
+    public Result queryShopByType(@RequestParam("typeId") Integer typeId,
+                                  @RequestParam(value = "current", defaultValue = "1") Integer current) {
         // 根据类型分页查询
         Pageable pageable = PageRequest.of(current-1, 5);
         Page<Shop> page =shopRepository.findAllByTypeId(typeId,pageable);
@@ -79,10 +82,8 @@ public class ShopController {
      * @return 商铺列表
      */
     @GetMapping("/of/name")
-    public Result queryShopByName(
-            @RequestParam(value = "name", required = false) String name,
-            @RequestParam(value = "current", defaultValue = "1") Integer current
-    ) {
+    public Result queryShopByName(@RequestParam(value = "name", required = false) String name,
+                                  @RequestParam(value = "current", defaultValue = "1") Integer current) {
         // 根据类型分页查询
 
         Pageable pageable = PageRequest.of(current, SystemConstants.MAX_PAGE_SIZE);
