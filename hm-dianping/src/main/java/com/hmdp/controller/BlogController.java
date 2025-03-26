@@ -8,13 +8,13 @@ import com.hmdp.mapper.BlogRepository;
 import com.hmdp.mapper.UserRepository;
 import com.hmdp.utils.SystemConstants;
 import com.hmdp.utils.UserHolder;
-import jakarta.annotation.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -74,7 +74,7 @@ public class BlogController {
         // 查询用户
         records.forEach(blog ->{
             Long userId = blog.getUserId();
-            User user = userRepository.getById(userId);
+            User user = userRepository.findById(userId).get();
             blog.setName(user.getNickName());
             blog.setIcon(user.getIcon());
         });

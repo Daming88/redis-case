@@ -7,16 +7,12 @@ import com.hmdp.entity.Shop;
 import com.hmdp.mapper.ShopRepository;
 import com.hmdp.service.IShopService;
 import com.hmdp.utils.ToolUtil;
-import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
+import javax.annotation.Resource;
 import java.util.Map;
 
 import static com.hmdp.utils.RedisConstants.*;

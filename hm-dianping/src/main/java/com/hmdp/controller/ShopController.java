@@ -6,7 +6,6 @@ import com.hmdp.entity.Shop;
 import com.hmdp.mapper.ShopRepository;
 import com.hmdp.service.IShopService;
 import com.hmdp.utils.SystemConstants;
-import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
