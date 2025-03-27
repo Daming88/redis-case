@@ -8,13 +8,13 @@ import com.hmdp.mapper.BlogRepository;
 import com.hmdp.mapper.UserRepository;
 import com.hmdp.utils.SystemConstants;
 import com.hmdp.utils.UserHolder;
+import jakarta.annotation.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
 import java.util.List;
 import java.util.stream.Collectors;
 
