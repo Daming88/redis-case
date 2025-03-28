@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant A as ServiceA
+    participant B as ServiceB
+    participant IOC as Spring容器
+    
+    IOC->>A: 1. 开始创建ServiceA
+    A->>IOC: 2. 提前暴露ServiceA的ObjectFactory（三级缓存）
+    IOC->>A: 3. 发现需要注入ServiceB
+    IOC->>B: 4. 开始创建ServiceB
+    B->>IOC: 5. 提前暴露ServiceB的ObjectFactory
+    IOC->>B: 6. 发现需要注入ServiceA
+    IOC->>A: 7. 从三级缓存获取ServiceA的早期引用
+    IOC->>B: 8. 完成ServiceB的创建（移入一级缓存）
+    IOC->>A: 9. 完成ServiceA的创建（移入一级缓存）
