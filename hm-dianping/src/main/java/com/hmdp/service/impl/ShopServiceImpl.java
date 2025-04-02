@@ -6,6 +6,8 @@ import com.hmdp.dto.Result;
 import com.hmdp.entity.Shop;
 import com.hmdp.mapper.ShopRepository;
 import com.hmdp.service.IShopService;
+import com.hmdp.utils.CacheClient;
+import com.hmdp.utils.RedisConstants;
 import com.hmdp.utils.ToolUtil;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static com.hmdp.utils.RedisConstants.*;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -28,31 +31,46 @@ public class ShopServiceImpl implements IShopService {
     @Resource
     RedisTemplate redisTemplate;
 
+    @Resource
+    CacheClient cacheClient;
+
+    /**
+     * 普通查询店铺信息，不能解决缓存穿透
+     * @param id
+     * @return
+     */
     @Override
     public Result queryShopById(Long id) {
-        Map<Object, Object> shopMap = redisTemplate.opsForHash().entries(CACHE_SHOP_KEY + id);
-        if (!shopMap.isEmpty()) {
-            if (shopMap.get("id")!=null){
-                Shop shop = BeanUtil.fillBeanWithMap(shopMap, new Shop(), false);
-                return Result.ok(shop);
-            }else {
-                return Result.fail("店铺不存在");
-            }
-        }
+//        Map<Object, Object> shopMap = redisTemplate.opsForHash().entries(CACHE_SHOP_KEY + id);
+//        if (!shopMap.isEmpty()) {
+//            if (shopMap.get("id")!=null){
+//                Shop shop = BeanUtil.fillBeanWithMap(shopMap, new Shop(), false);
+//                return Result.ok(shop);
+//            }else {
+//                return Result.fail("店铺不存在");
+//            }
+//        }
+//
+//        // 不存在
+//        Shop shop = shopRepository.findById(id).orElse(null);
+//        if (shop == null) {
+//            redisTemplate.opsForHash().put(CACHE_SHOP_KEY + id, "id",null);
+//            redisTemplate.expire(CACHE_SHOP_KEY + id, CACHE_NULL_TTL, MINUTES);
+//            return Result.fail("店铺不存在");
+//        }
+//        // 存在,写入Redis
+//        Map<String, Object> targetShopMap = ToolUtil.beanToMap(shop);
+//        redisTemplate.opsForHash().putAll(CACHE_SHOP_KEY + id, targetShopMap);
+//        redisTemplate.expire(CACHE_SHOP_KEY + id, CACHE_SHOP_TTL, MINUTES);
+//        return Result.ok(shop);
 
-        // 不存在
-        Shop shop = shopRepository.findById(id).orElse(null);
-        if (shop == null) {
-            redisTemplate.opsForHash().put(CACHE_SHOP_KEY + id, "id",null);
-            redisTemplate.expire(CACHE_SHOP_KEY + id, CACHE_NULL_TTL, MINUTES);
-            return Result.fail("店铺不存在");
-        }
-        // 存在,写入Redis
-        Map<String, Object> targetShopMap = ToolUtil.beanToMap(shop);
-        redisTemplate.opsForHash().putAll(CACHE_SHOP_KEY + id, targetShopMap);
-        redisTemplate.expire(CACHE_SHOP_KEY + id, CACHE_SHOP_TTL, MINUTES);
+        Shop shop = cacheClient.queryWithPassThrough(CACHE_SHOP_KEY, id, Shop.class, CACHE_SHOP_TTL, TimeUnit.SECONDS, shopId -> {
+            Shop res = shopRepository.findById(shopId).get();
+            return res;
+        });
         return Result.ok(shop);
     }
+
 
     @Transactional
     @Override
@@ -61,7 +79,7 @@ public class ShopServiceImpl implements IShopService {
         if (id == null){
             return Result.fail("店铺id不能为空");
         }
-        // 跟新数据库，删除缓存
+        // 更新数据库，删除缓存
         Shop shop1 = shopRepository.findById(id).get();
         BeanUtil.copyProperties(shop, shop1, CopyOptions.create().setIgnoreNullValue(true));
         shopRepository.save(shop1);
