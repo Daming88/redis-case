@@ -32,7 +32,7 @@ public class CacheClient {
         redisTemplate.opsForValue().set(key, redisData);
     }
 
-    public <R,ID> R queryWithPassThrough(String keyPrefix, ID id, Class<R> type, Long time, TimeUnit unit,Function<ID,R> dbFallback) {
+    public <R,ID> R queryWithPassThrough(String keyPrefix, ID id, Long time, TimeUnit unit,Function<ID,R> dbFallback) {
         String key = keyPrefix + id;
         // 1.从redis查询
         Object result = redisTemplate.opsForValue().get(key);

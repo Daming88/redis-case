@@ -64,7 +64,12 @@ public class ShopServiceImpl implements IShopService {
 //        redisTemplate.expire(CACHE_SHOP_KEY + id, CACHE_SHOP_TTL, MINUTES);
 //        return Result.ok(shop);
 
-        Shop shop = cacheClient.queryWithPassThrough(CACHE_SHOP_KEY, id, Shop.class, CACHE_SHOP_TTL, TimeUnit.SECONDS, shopId -> {
+        Shop shop1 = cacheClient.queryWithPassThrough(CACHE_SHOP_KEY, id, CACHE_SHOP_TTL, TimeUnit.SECONDS, shopId -> {
+            Shop res = shopRepository.findById(shopId).get();
+            return res;
+        });
+
+        Shop shop = cacheClient.queryWithPassThrough(CACHE_SHOP_KEY, id, CACHE_SHOP_TTL, TimeUnit.SECONDS, shopId -> {
             Shop res = shopRepository.findById(shopId).get();
             return res;
         });

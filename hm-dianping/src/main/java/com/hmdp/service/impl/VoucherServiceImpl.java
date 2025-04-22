@@ -11,7 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class VoucherServiceImpl implements IVoucherService {
@@ -27,6 +30,15 @@ public class VoucherServiceImpl implements IVoucherService {
         // 查询优惠券信息
         List<Voucher> vouchers = voucherRepository.findAllByShopId(shopId);
         // 返回结果
+        vouchers=vouchers.stream().map(item->{
+            Optional<SeckillVoucher> seckillVoucher = seckillVoucherRepository.findById(item.getId());
+            if (seckillVoucher.isPresent()) {
+                item.setStock(seckillVoucher.get().getStock());
+                item.setBeginTime(seckillVoucher.get().getBeginTime());
+                item.setEndTime(seckillVoucher.get().getEndTime());
+            }
+            return item;
+        }).collect(Collectors.toList());
         return Result.ok(vouchers);
     }
 
@@ -34,6 +46,9 @@ public class VoucherServiceImpl implements IVoucherService {
     @Transactional
     public void addSeckillVoucher(Voucher voucher) {
         // 保存优惠券
+        voucher.setCreateTime(LocalDateTime.now() );
+        voucher.setUpdateTime(LocalDateTime.now() );
+        voucher.setStatus(1);
         voucherRepository.save(voucher);
         // 保存秒杀信息
         SeckillVoucher seckillVoucher = new SeckillVoucher();
@@ -41,6 +56,8 @@ public class VoucherServiceImpl implements IVoucherService {
         seckillVoucher.setStock(voucher.getStock());
         seckillVoucher.setBeginTime(voucher.getBeginTime());
         seckillVoucher.setEndTime(voucher.getEndTime());
+        seckillVoucher.setCreateTime(LocalDateTime.now() );
+        seckillVoucher.setUpdateTime(LocalDateTime.now() );
         seckillVoucherRepository.save(seckillVoucher);
     }
 }

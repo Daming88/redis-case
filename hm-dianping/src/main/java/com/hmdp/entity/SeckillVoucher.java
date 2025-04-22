@@ -21,7 +21,6 @@ public class SeckillVoucher implements Serializable {
      * 关联的优惠券的id
      */
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long voucherId;
 
     /**

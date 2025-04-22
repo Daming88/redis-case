@@ -21,7 +21,7 @@ public class Voucher implements Serializable {
      * 主键
      */
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
