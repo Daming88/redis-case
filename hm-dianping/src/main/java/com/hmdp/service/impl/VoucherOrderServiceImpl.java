@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -36,10 +37,18 @@ public class VoucherOrderServiceImpl implements IVoucherOrderService {
     @Resource
     RedisIdWorker redisIdWorker;
 
+    
+
+    @Transactional
     @Override
     public Result seckillVoucher(Long voucherId) {
 
+        return getResult3(voucherId);
 
+    }
+
+    // 悲观锁
+    private Result getResult2(Long voucherId) {
         synchronized (LOCK) {
             // 根据id查询优惠券
             Optional<SeckillVoucher> seckillVoucherOptional = seckillVoucherRepository.findById(voucherId);
@@ -82,6 +91,100 @@ public class VoucherOrderServiceImpl implements IVoucherOrderService {
             return Result.ok(voucherOrder.getId());
         }
     }
+
+    // 乐观锁
+    public Result getResult1(Long voucherId) {
+
+        UserDTO user = UserHolder.getUser();
+        // 根据id查询优惠券
+        Optional<SeckillVoucher> seckillVoucherOptional = seckillVoucherRepository.findById(voucherId);
+        if (!seckillVoucherOptional.isPresent()) {
+            return Result.fail("优惠券不存在");
+        }
+        SeckillVoucher seckillVoucher = seckillVoucherOptional.get();
+        // 判断时间是否开启
+        if (seckillVoucher.getBeginTime().isAfter(LocalDateTime.now())) {
+            return Result.fail("优惠券尚未开始");
+        }
+        // 判断时间是否结束
+        if (seckillVoucher.getEndTime().isBefore(LocalDateTime.now())) {
+            return Result.fail("优惠券已经结束");
+        }
+
+        if(seckillVoucher.getStock()<1){
+            return Result.fail("优惠券已经售完");
+        }
+
+        // 扣减库存
+        int result = seckillVoucherRepository.reduceStock(voucherId, seckillVoucher.getStock());
+        if (result==0){
+            return Result.fail("优惠券已经售完");
+        }
+
+        // 创建订单
+        VoucherOrder voucherOrder = new VoucherOrder();
+        voucherOrder.setId(redisIdWorker.nextId("order"));
+        voucherOrder.setUserId(user.getId());
+        voucherOrder.setVoucherId(voucherId);
+        voucherOrder.setPayType(1);
+        voucherOrder.setStatus(1);
+        voucherOrder.setCreateTime(LocalDateTime.now());
+        voucherOrder.setPayTime(LocalDateTime.now());
+        voucherOrder.setUpdateTime(LocalDateTime.now());
+        voucherOrderRepository.save(voucherOrder);
+        return Result.ok(voucherOrder.getId());
+    }
+
+    // 一人一单
+    public Result getResult3(Long voucherId) {
+
+        UserDTO user = UserHolder.getUser();
+        // 根据id查询优惠券
+        Optional<SeckillVoucher> seckillVoucherOptional = seckillVoucherRepository.findById(voucherId);
+        if (!seckillVoucherOptional.isPresent()) {
+            return Result.fail("优惠券不存在");
+        }
+        SeckillVoucher seckillVoucher = seckillVoucherOptional.get();
+        // 判断时间是否开启
+        if (seckillVoucher.getBeginTime().isAfter(LocalDateTime.now())) {
+            return Result.fail("优惠券尚未开始");
+        }
+        // 判断时间是否结束
+        if (seckillVoucher.getEndTime().isBefore(LocalDateTime.now())) {
+            return Result.fail("优惠券已经结束");
+        }
+
+        if(seckillVoucher.getStock()<1){
+            return Result.fail("优惠券已经售完");
+        }
+
+        // 一人一单
+        List<VoucherOrder> count=voucherOrderRepository.findByuserIdAndVoucherId(user.getId(),voucherId);
+        if (!count.isEmpty()){
+            return Result.fail("用户已经购买过一次了！");
+        }
+
+        // 扣减库存
+        int result = seckillVoucherRepository.reduceStock(voucherId, seckillVoucher.getStock());
+        if (result==0){
+            return Result.fail("优惠券已经售完");
+        }
+
+        // 创建订单
+        VoucherOrder voucherOrder = new VoucherOrder();
+        voucherOrder.setId(redisIdWorker.nextId("order"));
+        voucherOrder.setUserId(user.getId());
+        voucherOrder.setVoucherId(voucherId);
+        voucherOrder.setPayType(1);
+        voucherOrder.setStatus(1);
+        voucherOrder.setCreateTime(LocalDateTime.now());
+        voucherOrder.setPayTime(LocalDateTime.now());
+        voucherOrder.setUpdateTime(LocalDateTime.now());
+        voucherOrderRepository.save(voucherOrder);
+        return Result.ok(voucherOrder.getId());
+    }
+    
+    
 
     // 添加事务模板注入
 //    @Resource
