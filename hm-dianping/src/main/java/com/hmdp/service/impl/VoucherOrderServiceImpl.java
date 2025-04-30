@@ -13,6 +13,8 @@ import com.hmdp.utils.UserHolder;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -24,6 +26,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -43,11 +46,14 @@ public class VoucherOrderServiceImpl implements IVoucherOrderService {
     @Autowired
     RedisTemplate redisTemplate;
 
+    @Resource
+    private RedissonClient redissonClient;
+
 
     @Override
-    public Result seckillVoucher(Long voucherId) {
+    public Result seckillVoucher(Long voucherId) throws InterruptedException {
 
-        return getResult4(voucherId);
+        return getResult5(voucherId);
 
     }
 
@@ -209,8 +215,46 @@ public class VoucherOrderServiceImpl implements IVoucherOrderService {
         } finally {
             redisLock.unLock();
         }
+    }
 
+    // 一人一单,Redission分布式锁
+    public Result getResult5(Long voucherId) throws InterruptedException {
 
+        // 根据id查询优惠券
+        Optional<SeckillVoucher> seckillVoucherOptional = seckillVoucherRepository.findById(voucherId);
+        if (!seckillVoucherOptional.isPresent()) {
+            return Result.fail("优惠券不存在");
+        }
+        SeckillVoucher seckillVoucher = seckillVoucherOptional.get();
+        // 判断时间是否开启
+        if (seckillVoucher.getBeginTime().isAfter(LocalDateTime.now())) {
+            return Result.fail("优惠券尚未开始");
+        }
+        // 判断时间是否结束
+        if (seckillVoucher.getEndTime().isBefore(LocalDateTime.now())) {
+            return Result.fail("优惠券已经结束");
+        }
+
+        if (seckillVoucher.getStock() < 1) {
+            return Result.fail("优惠券已经售完");
+        }
+
+        UserDTO user = UserHolder.getUser();
+        RLock lock = redissonClient.getLock("lock:order:" + user.getId());
+
+        boolean isLock = lock.tryLock(1L, TimeUnit.SECONDS);
+        if (!isLock) {
+            // 获取锁失败，返回错误或重试
+            return Result.fail("不允许重复下单");
+        }
+
+        try {
+            // 获取代理对象(事务)
+            IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
+            return proxy.createVoucherOrder(voucherId, seckillVoucher);
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Transactional

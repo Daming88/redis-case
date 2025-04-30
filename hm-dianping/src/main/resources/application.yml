@@ -5,7 +5,7 @@ spring:
     name: hmdp
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
-    url: jdbc:mysql://192.168.1.146:3306/hmdp?useSSL=false&serverTimezone=GMT%2B8
+    url: jdbc:mysql://192.168.1.109:3306/hmdp?useSSL=false&serverTimezone=GMT%2B8
     username: root
     password: root
   jpa:
@@ -20,9 +20,13 @@ spring:
   data:
     redis:
       port: 16379
-      host: 127.0.0.1
+      host: 192.168.1.209
 mybatis-plus:
   type-aliases-package: com.hmdp.entity # 别名扫描包
 logging:
   level:
     com.hmdp: debug
+
+canal:
+  server: 192.168.1.109:11111
+  destination: example
