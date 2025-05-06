@@ -21,12 +21,18 @@ spring:
     redis:
       port: 16379
       host: 192.168.1.209
+  rabbitmq:
+    host: 192.168.1.209
+    port: 5672
+    username: daming
+    password: daming
+    listener:
+      simple:
+        concurrency: 1
+        prefetch: 1
+        acknowledge-mode: manual
 mybatis-plus:
   type-aliases-package: com.hmdp.entity # 别名扫描包
 logging:
   level:
     com.hmdp: debug
-
-canal:
-  server: 192.168.1.109:11111
-  destination: example
